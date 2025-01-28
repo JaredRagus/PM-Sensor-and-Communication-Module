@@ -1,0 +1,149 @@
+esphome:
+  name: pm-sensor
+
+esp32:
+  board: esp32-c6-devkitc-1
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: "freshair"
+
+ota:
+  - platform: esphome
+    password: "freshair"
+
+wifi:
+  ssid: "MariaD05"
+  password: "ragus123"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Pm-Sensor Fallback Hotspot"
+    password: "OmjsyCTof50S"
+
+captive_portal:
+
+i2c:
+  sda: 6
+  scl: 7
+  scan: true
+  id: bus_a
+
+sensor:
+  - platform: pmsa003i
+ # This fixed a problem where the board wouldt report anything when it's plugged in
+    setup_priority: -100
+    standard_units: True
+    # Overall sample frequency. 
+    # NOTE: Bear in mind how it impacts moving average reporting, update_interval * window_size = time to get accurate calculated average
+    update_interval: 5s
+    # Particulate Mass sensor values  
+    pm_2_5:
+      name: "PM2.5"
+      id: "pm025"
+      filters:
+      - sliding_window_moving_average:
+        # Take this number of readings and calculate the average 
+          window_size: 5
+        # Push out the average after this number of readings  
+          send_every: 5
+      on_value:
+        # Calculates PM2.5 AQI based on USA EPA formula when each 'send_every' reading is published 
+        # https://en.wikipedia.org/wiki/Air_quality_index#Computing_the_AQI
+        lambda: |-
+          if (id(pm025).state < 12.0) {
+            // good
+            id(pm_2_5_aqi).publish_state((50.0 - 0.0) / (12.0 - 0.0) * (id(pm025).state - 0.0) + 0.0);
+          } else if (id(pm025).state < 35.4) {
+            // moderate
+            id(pm_2_5_aqi).publish_state((100.0 - 51.0) / (35.4 - 12.1) * (id(pm025).state - 12.1) + 51.0);
+          } else if (id(pm025).state < 55.4) {
+            // usg
+            id(pm_2_5_aqi).publish_state((150.0 - 101.0) / (55.4 - 35.5) * (id(pm025).state - 35.5) + 101.0);
+          } else if (id(pm025).state < 150.4) {
+            // unhealthy
+            id(pm_2_5_aqi).publish_state((200.0 - 151.0) / (150.4 - 55.5) * (id(pm025).state - 55.5) + 151.0);
+          } else if (id(pm025).state < 250.4) {
+            // very unhealthy
+            id(pm_2_5_aqi).publish_state((300.0 - 201.0) / (250.4 - 150.5) * (id(pm025).state - 150.5) + 201.0);
+          } else if (id(pm025).state < 350.4) {
+            // hazardous
+            id(pm_2_5_aqi).publish_state((400.0 - 301.0) / (350.4 - 250.5) * (id(pm025).state - 250.5) + 301.0);
+          } else if (id(pm025).state < 500.4) {
+            // hazardous 2
+            id(pm_2_5_aqi).publish_state((500.0 - 401.0) / (500.4 - 350.5) * (id(pm025).state - 350.5) + 401.0);
+          }
+    pm_10_0:
+      name: "PM10.0"
+      id: "pm100"
+      filters:
+      - sliding_window_moving_average:
+        # // take this number of readings and calculate the average 
+          window_size: 5
+        # // push out the average after this number of readings  
+          send_every: 5
+      on_value:
+        # Calculates PM10.0 AQI based on USA EPA formula when each 'send_every' reading is published
+        # https://en.wikipedia.org/wiki/Air_quality_index#Computing_the_AQI
+        lambda: |-
+          if (id(pm100).state < 54.0) {
+            // good
+            id(pm_10_0_aqi).publish_state((50.0 - 0.0) / (54.0 - 0.0) * (id(pm100).state - 0.0) + 0.0);
+          } else if (id(pm100).state < 55) {
+            // moderate
+            id(pm_10_0_aqi).publish_state((100.0 - 51.0) / (154 - 55) * (id(pm100).state - 55) + 51.0);
+          } else if (id(pm100).state < 155) {
+            // usg
+            id(pm_10_0_aqi).publish_state((150.0 - 101.0) / (254 - 155) * (id(pm100).state - 155) + 101.0);
+          } else if (id(pm100).state < 354) {
+            // unhealthy
+            id(pm_10_0_aqi).publish_state((200.0 - 151.0) / (354 - 255) * (id(pm100).state - 255) + 151.0);
+          } else if (id(pm100).state < 424) {
+            // very unhealthy
+            id(pm_10_0_aqi).publish_state((300.0 - 201.0) / (424 - 355) * (id(pm100).state - 355) + 201.0);
+          } else if (id(pm100).state < 504) {
+            // hazardous
+            id(pm_10_0_aqi).publish_state((400.0 - 301.0) / (504 - 425) * (id(pm100).state - 425) + 301.0);
+          } else if (id(pm100).state < 604) {
+            // hazardous 2
+            id(pm_10_0_aqi).publish_state((500.0 - 401.0) / (604 - 505) * (id(pm100).state - 505) + 401.0);
+          }
+    # Particulate Count sensor values  
+    pmc_0_3:
+      name: "PMC >0.3µm"
+      id: "pmc003"
+    pmc_0_5:
+      name: "PMC >0.5µm"
+      id: "pmc005"
+    pmc_1_0:
+      name: "PMC >1µm"
+      id: "pmc010"
+    pmc_2_5:
+      name: "PMC >2.5µm"
+      id: "pmc025"
+    pmc_5_0:
+      name: "PMC >5µm"
+      id: "pmc050"
+    pmc_10_0:
+      name: "PMC >10µm"
+      id: "pmc100"
+
+    # Template sensor values for AQI Calculation   
+  - platform: template
+    name: "PM <2.5 AQI"
+    unit_of_measurement: "AQI"
+    accuracy_decimals: 0
+    id: pm_2_5_aqi
+  - platform: template
+    name: "PM <10.0 AQI"
+    unit_of_measurement: "AQI"
+    accuracy_decimals: 0
+    id: pm_10_0_aqi
+
+web_server:
+  port: 80
