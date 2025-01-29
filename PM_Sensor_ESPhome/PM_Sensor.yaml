@@ -1,5 +1,6 @@
 esphome:
   name: pm-sensor
+  name_add_mac_suffix: true
 
 esp32:
   board: esp32-c6-devkitc-1
@@ -17,17 +18,28 @@ ota:
   - platform: esphome
     password: "freshair"
 
+#Enables Wifi connection
 wifi:
   ssid: "MariaD05"
   password: "ragus123"
-
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Pm-Sensor Fallback Hotspot"
     password: "OmjsyCTof50S"
 
+#Enables Bluetooth beacon to send data 
+esp32_ble_beacon:
+  type: iBeacon
+  uuid: '847c4060-ff04-d4b1-64b7-a796ba0509bc'
+
+#Enables a web dashboard accessible via ESP32 IP if connected to same local network
+#NOTE: The Web Server Component should be disabled if using bluetooth as the device is likely to run out of memory and will malfunction when both components are enabled simultaneously.
+web_server:
+  port: 80
+
 captive_portal:
 
+#Enables I2C connection 
 i2c:
   sda: 6
   scl: 7
@@ -36,13 +48,14 @@ i2c:
 
 sensor:
   - platform: pmsa003i
- # This fixed a problem where the board wouldt report anything when it's plugged in
+ # This fixed a problem where the board would't report anything when it's plugged in
     setup_priority: -100
+    #Sets readings to standard units if true, environmental units if false
     standard_units: True
     # Overall sample frequency. 
-    # NOTE: Bear in mind how it impacts moving average reporting, update_interval * window_size = time to get accurate calculated average
+    # NOTE: update_interval * window_size = time to get accurate calculated average
     update_interval: 5s
-    # Particulate Mass sensor values  
+    # PM sensor values  
     pm_2_5:
       name: "PM2.5"
       id: "pm025"
@@ -56,9 +69,6 @@ sensor:
         # Calculates PM2.5 AQI based on USA EPA formula when each 'send_every' reading is published 
         # https://en.wikipedia.org/wiki/Air_quality_index#Computing_the_AQI
         lambda: |-
-          if (id(pm025).state < 12.0) {
-            // good
-            id(pm_2_5_aqi).publish_state((50.0 - 0.0) / (12.0 - 0.0) * (id(pm025).state - 0.0) + 0.0);
           } else if (id(pm025).state < 35.4) {
             // moderate
             id(pm_2_5_aqi).publish_state((100.0 - 51.0) / (35.4 - 12.1) * (id(pm025).state - 12.1) + 51.0);
@@ -83,17 +93,14 @@ sensor:
       id: "pm100"
       filters:
       - sliding_window_moving_average:
-        # // take this number of readings and calculate the average 
+        # // Take this number of readings and calculate the average 
           window_size: 5
-        # // push out the average after this number of readings  
+        # //Push out the average after this number of readings  
           send_every: 5
       on_value:
         # Calculates PM10.0 AQI based on USA EPA formula when each 'send_every' reading is published
         # https://en.wikipedia.org/wiki/Air_quality_index#Computing_the_AQI
         lambda: |-
-          if (id(pm100).state < 54.0) {
-            // good
-            id(pm_10_0_aqi).publish_state((50.0 - 0.0) / (54.0 - 0.0) * (id(pm100).state - 0.0) + 0.0);
           } else if (id(pm100).state < 55) {
             // moderate
             id(pm_10_0_aqi).publish_state((100.0 - 51.0) / (154 - 55) * (id(pm100).state - 55) + 51.0);
@@ -113,7 +120,7 @@ sensor:
             // hazardous 2
             id(pm_10_0_aqi).publish_state((500.0 - 401.0) / (604 - 505) * (id(pm100).state - 505) + 401.0);
           }
-    # Particulate Count sensor values  
+    # Particulate Matter Count sensor values  
     pmc_0_3:
       name: "PMC >0.3µm"
       id: "pmc003"
@@ -145,5 +152,3 @@ sensor:
     accuracy_decimals: 0
     id: pm_10_0_aqi
 
-web_server:
-  port: 80
