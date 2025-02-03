@@ -10,9 +10,9 @@ esp32:
 # Enable logging
 logger:
 
-# Enable Home Assistant API
-api:
-  password: "freshair"
+# Enable Home Assistant API, disable if using MQTT
+#api:
+#  password: "freshair"
 
 ota:
   - platform: esphome
@@ -25,19 +25,20 @@ wifi:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Pm-Sensor Fallback Hotspot"
-    password: "OmjsyCTof50S"
-
-#Enables Bluetooth beacon to send data 
-esp32_ble_beacon:
-  type: iBeacon
-  uuid: '847c4060-ff04-d4b1-64b7-a796ba0509bc'
+    password: "freshair"
 
 #Enables a web dashboard accessible via ESP32 IP if connected to same local network
-#NOTE: The Web Server Component should be disabled if using bluetooth as the device is likely to run out of memory and will malfunction when both components are enabled simultaneously.
 web_server:
   port: 80
 
 captive_portal:
+
+#Enables MQTT
+mqtt:
+  broker: mqtt ip
+  username: pm-sensor
+  password: freshair
+  client_id: pm-sensor
 
 #Enables I2C connection 
 i2c:
@@ -59,6 +60,8 @@ sensor:
     pm_2_5:
       name: "PM2.5"
       id: "pm025"
+      #For MQTT
+      state_topic: pm-sensor/pm2.5
       filters:
       - sliding_window_moving_average:
         # Take this number of readings and calculate the average 
@@ -91,6 +94,8 @@ sensor:
     pm_10_0:
       name: "PM10.0"
       id: "pm100"
+      #For MQTT
+      state_topic: pm-sensor/pm10
       filters:
       - sliding_window_moving_average:
         # // Take this number of readings and calculate the average 
@@ -119,26 +124,18 @@ sensor:
           } else if (id(pm100).state < 604) {
             // hazardous 2
             id(pm_10_0_aqi).publish_state((500.0 - 401.0) / (604 - 505) * (id(pm100).state - 505) + 401.0);
-          }
+          } 
     # Particulate Matter Count sensor values  
-    pmc_0_3:
-      name: "PMC >0.3µm"
-      id: "pmc003"
-    pmc_0_5:
-      name: "PMC >0.5µm"
-      id: "pmc005"
-    pmc_1_0:
-      name: "PMC >1µm"
-      id: "pmc010"
     pmc_2_5:
       name: "PMC >2.5µm"
       id: "pmc025"
-    pmc_5_0:
-      name: "PMC >5µm"
-      id: "pmc050"
+      #For MQTT
+      state_topic: pm-sensor/pmc2.5
     pmc_10_0:
       name: "PMC >10µm"
       id: "pmc100"
+      #For MQTT
+      state_topic: pm-sensor/pmc10
 
     # Template sensor values for AQI Calculation   
   - platform: template
@@ -146,9 +143,12 @@ sensor:
     unit_of_measurement: "AQI"
     accuracy_decimals: 0
     id: pm_2_5_aqi
+    #For MQTT
+    state_topic: pm-sensor/pm2.5aqi
   - platform: template
     name: "PM <10.0 AQI"
     unit_of_measurement: "AQI"
     accuracy_decimals: 0
     id: pm_10_0_aqi
-
+    #For MQTT
+    state_topic: pm-sensor/pm10aqi
