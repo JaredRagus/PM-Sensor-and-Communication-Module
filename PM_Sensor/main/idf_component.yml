@@ -1,0 +1,4 @@
+dependencies:
+  cmd_nvs: "*"
+  cmd_system: "*"
+  cmd_wifi: "*"
