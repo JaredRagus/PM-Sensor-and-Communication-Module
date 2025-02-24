@@ -1,0 +1,17 @@
+dependencies:
+  esp-idf-cxx:
+    dependencies: []
+    source:
+      path: C:\Users\jaredownsyou\Desktop\PM_Sensor\Components\esp-idf-cxx
+      type: local
+    version: 1.0.0
+  idf:
+    source:
+      type: idf
+    version: 5.4.0
+direct_dependencies:
+- espressif/esp-idf-cxx
+- idf
+manifest_hash: fd427c04eb93192554d0ae78639f3bb6dde01490e1dc12b5831a82698a63a832
+target: esp32c6
+version: 2.0.0
